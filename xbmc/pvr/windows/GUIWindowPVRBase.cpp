@@ -54,6 +54,8 @@
 
 #define MAX_INVALIDATION_FREQUENCY 2000 // limit to one invalidation per X milliseconds
 
+#define MAX_INVALIDATION_FREQUENCY 2000 // limit to one invalidation per X milliseconds
+
 using namespace PVR;
 using namespace EPG;
 using namespace KODI::MESSAGING;
