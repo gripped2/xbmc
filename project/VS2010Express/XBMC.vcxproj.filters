@@ -3123,6 +3123,7 @@
     <ClCompile Include="..\..\xbmc\contrib\kissfft\kiss_fftr.c">
       <Filter>contrib\kissfft</Filter>
     </ClCompile>
+<<<<<<< 8583c72541801062fe000ec112cfe65650ddf959
     <ClCompile Include="..\..\xbmc\pvr\timers\PVRTimerType.cpp">
       <Filter>pvr\timers</Filter>
     </ClCompile>
@@ -3258,6 +3259,11 @@
     <ClCompile Include="..\..\xbmc\addons\AddonCallbacksAudioEngine.cpp">
       <Filter>addons</Filter>
     </ClCompile>
+=======
+    <ClCompile Include="..\..\xbmc\windows\GUIWindowSplash.cpp">
+      <Filter>windows</Filter>
+    </ClCompile>
+>>>>>>> [splash] introduce splash also as regular window
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\xbmc\win32\pch.h">
@@ -6151,6 +6157,7 @@
     <ClInclude Include="..\..\xbmc\contrib\kissfft\kiss_fftr.h">
       <Filter>contrib\kissfft</Filter>
     </ClInclude>
+<<<<<<< 8583c72541801062fe000ec112cfe65650ddf959
     <ClInclude Include="..\..\xbmc\pvr\timers\PVRTimerType.h">
       <Filter>pvr\timers</Filter>
     </ClInclude>
@@ -6322,6 +6329,11 @@
     <ClInclude Include="..\..\xbmc\utils\ScopeGuard.h">
       <Filter>utils</Filter>
     </ClInclude>
+=======
+    <ClInclude Include="..\..\xbmc\windows\GUIWindowSplash.h">
+      <Filter>windows</Filter>
+    </ClInclude>
+>>>>>>> [splash] introduce splash also as regular window
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="..\..\xbmc\win32\XBMC_PC.rc">
