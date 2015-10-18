@@ -299,6 +299,12 @@ void CGUIWindowPVRBase::SetInvalid()
   }
 }
 
+bool CGUIWindowPVRBase::CanBeActivated() const
+{
+  // No activation if PVR is not enabled.
+  return CSettings::GetInstance().GetBool(CSettings::SETTING_PVRMANAGER_ENABLED);
+}
+
 bool CGUIWindowPVRBase::OpenGroupSelectionDialog(void)
 {
   CGUIDialogSelect *dialog = (CGUIDialogSelect*)g_windowManager.GetWindow(WINDOW_DIALOG_SELECT);
@@ -448,7 +454,7 @@ bool CGUIWindowPVRBase::ShowTimerSettings(CFileItem *item)
   return pDlgInfo->IsConfirmed();
 }
 
-bool CGUIWindowPVRBase::StartRecordFile(CFileItem *item, bool bAdvanced)
+bool CGUIWindowPVRBase::AddTimer(CFileItem *item, bool bAdvanced)
 {
   if (!item->HasEPGInfoTag())
     return false;
@@ -483,11 +489,6 @@ bool CGUIWindowPVRBase::StartRecordFile(CFileItem *item, bool bAdvanced)
   }
   else
   {
-    // ask for confirmation before starting a timer
-    if (!CGUIDialogYesNo::ShowAndGetInput(
-        CVariant{264} /* "Record" */, CVariant{tag->PVRChannelName()}, CVariant{""}, CVariant{tag->Title()}))
-      return false;
-  
     CPVRTimerInfoTagPtr newTimer = CPVRTimerInfoTag::CreateFromEpg(tag);
 
     if (newTimer)
@@ -769,21 +770,6 @@ bool CGUIWindowPVRBase::ActionRecord(CFileItem *item)
 
   if (epgTag->Timer() == NULL)
   {
-    /* create a confirmation dialog */
-    CGUIDialogYesNo* pDialog = (CGUIDialogYesNo*) g_windowManager.GetWindow(WINDOW_DIALOG_YES_NO);
-    if (!pDialog)
-      return bReturn;
-
-    pDialog->SetHeading(CVariant{264});
-    pDialog->SetLine(0, CVariant{""});
-    pDialog->SetLine(1, CVariant{epgTag->Title()});
-    pDialog->SetLine(2, CVariant{""});
-    pDialog->Open();
-
-    /* prompt for the user's confirmation */
-    if (!pDialog->IsConfirmed())
-      return bReturn;
-
     CPVRTimerInfoTagPtr newTimer = CPVRTimerInfoTag::CreateFromEpg(epgTag);
     if (newTimer)
     {

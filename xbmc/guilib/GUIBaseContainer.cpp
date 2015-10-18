@@ -651,6 +651,9 @@ CGUIListItemPtr CGUIBaseContainer::GetListItem(int offset, unsigned int flag) co
   int item = GetSelectedItem() + offset;
   if (flag & INFOFLAG_LISTITEM_POSITION) // use offset from the first item displayed, taking into account scrolling
     item = CorrectOffset((int)(m_scroller.GetValue() / m_layout->Size(m_orientation)), offset);
+  
+  if (flag & INFOFLAG_LISTITEM_ABSOLUTE) // use offset from the first item
+    item = CorrectOffset(0, offset);
 
   if (flag & INFOFLAG_LISTITEM_WRAP)
   {
@@ -749,7 +752,12 @@ bool CGUIBaseContainer::OnClick(int actionID)
     { // "select" action
       int selected = GetSelectedItem();
       if (selected >= 0 && selected < (int)m_items.size())
-        m_listProvider->OnClick(m_items[selected]);
+      {
+        if (m_clickActions.HasAnyActions())
+          m_clickActions.ExecuteActions(0, GetParentID(), m_items[selected]);
+        else
+          m_listProvider->OnClick(m_items[selected]);
+      }
       return true;
     }
     // grab the currently focused subitem (if applicable)

@@ -1164,6 +1164,11 @@ msgctxt "#263"
 msgid "Allow remote control via HTTP"
 msgstr ""
 
+#. Label of a context menu entry to start/schedule a recording
+#: xbmc/music/windows/GUIWindowMusicBase.cpp
+#: xbmc/pvr/dialogs/GUIDialogPVRGuideInfo.cpp
+#: xbmc/pvr/windows/GUIWindowPVRGuide.cpp
+#: xbmc/pvr/windows/GUIWindowPVRSearch.cpp
 msgctxt "#264"
 msgid "Record"
 msgstr ""
@@ -2469,6 +2474,7 @@ msgstr ""
 
 #: xbmc/dialogs/GUIDialogMediaFilter.cpp
 #: xbmc/playlists/SmartPlaylist.cpp
+#: xbmc/video/dialogs/GUIDialogVideoInfo.cpp
 msgctxt "#563"
 msgid "Rating"
 msgstr ""
@@ -3603,12 +3609,7 @@ msgctxt "#840"
 msgid "Do you only want to delete this timer or also the repeating timer that has scheduled it?"
 msgstr ""
 
-#. Label of a context menu entry to create a new recording timer with advanced configuration options
-#: xbmc/pvr/windows/GUIWindowPVRGuide.cpp
-#: xbmc/pvr/windows/GUIWindowPVRSearch.cpp
-msgctxt "#841"
-msgid "Add custom timer"
-msgstr ""
+#empty string with id 841
 
 #. Label of the option to switch between hierarchical and flat timer view (in confluence sideblade).
 #: skin.confluence
@@ -4088,7 +4089,7 @@ msgstr ""
 
 #: system/settings/settings.xml
 msgctxt "#1268"
-msgid "iOS 8 compatibility mode"
+msgid "Enable AirPlay Video and Picture support"
 msgstr ""
 
 msgctxt "#1269"
@@ -8655,6 +8656,9 @@ msgctxt "#19060"
 msgid "Delete timer"
 msgstr ""
 
+#. Label of a context menu entry to open the timer settings dialog
+#: xbmc/pvr/windows/GUIWindowPVRGuide.cpp
+#: xbmc/pvr/windows/GUIWindowPVRSearch.cpp
 msgctxt "#19061"
 msgid "Add timer"
 msgstr ""
@@ -9523,13 +9527,7 @@ msgctxt "#19254"
 msgid "Guide update failed for channel"
 msgstr ""
 
-msgctxt "#19255"
-msgid "Start recording"
-msgstr ""
-
-msgctxt "#19256"
-msgid "Stop recording"
-msgstr ""
+#empty strings from id 19255 to 19256
 
 msgctxt "#19257"
 msgid "Lock channel"
@@ -11933,7 +11931,7 @@ msgstr ""
 
 #: system/settings/settings.xml
 msgctxt "#20470"
-msgid "Group single movies into sets"
+msgid "Use movie sets for single movies"
 msgstr ""
 
 #empty strings from id 20471 to 21329
@@ -13395,10 +13393,7 @@ msgctxt "#24047"
 msgid "This add-on can't be uninstalled"
 msgstr ""
 
-#: skin.confluence
-msgctxt "#24048"
-msgid "Rollback"
-msgstr ""
+#empty string with id 24048
 
 #: xbmc/filesystem/AddonsDirectory.cpp
 msgctxt "#24049"
@@ -13636,14 +13631,11 @@ msgctxt "#24093"
 msgid "Checking %s..."
 msgstr ""
 
-#: xbmc/addons/guidialogaddoninfo.cpp
-msgctxt "#24094"
-msgid "(current)"
-msgstr ""
+#empty string with id 24094
 
-#: xbmc/addons/guidialogaddoninfo.cpp
+#: xbmc/addons/GUIDialogAddonInfo.cpp
 msgctxt "#24095"
-msgid "(blacklisted)"
+msgid "Local package cache"
 msgstr ""
 
 #: xbmc/addons/Repository.cpp
@@ -15755,7 +15747,7 @@ msgstr ""
 #. Description of setting "Videos -> Library -> Group movies in sets" with label #20458
 #: system/settings/settings.xml
 msgctxt "#36145"
-msgid "Group movies into \"Movie sets\" when browsing the movie library."
+msgid "When enabled, movies belonging to a \"Movie set\" are grouped together under one entry for the set in the movie library, this entry can then be opened to display the individual movies. When disabled, each movie will have it's own entry in the movie library even if it belongs to a set."
 msgstr ""
 
 #. Description of setting "Videos -> Library -> Update library on startup" with label #22000
@@ -15826,10 +15818,10 @@ msgctxt "#36156"
 msgid "Enable VAAPI hardware decoding of video files, mainly used for Intel graphics and in some circumstances AMD graphics."
 msgstr ""
 
-#. Description of setting "Videos -> Library -> Group single movies into sets" with label #20470
+#. Description of setting "Videos -> Library -> Use movie sets for single movies" with label #20470
 #: system/settings/settings.xml
 msgctxt "#36157"
-msgid "When scanned into the library a movie may be identified as forming part of a \"Movie set\". With this setting enabled you may get movie sets displayed that contain only a single movie. If it is disabled only movie sets with multiple movies will be displayed."
+msgid "When enabled, a \"Movie set\" entry is used even if the movie library contains only a single movie from that set. When disabled, a \"Movie set\" entry is used only if the movie library contains more than one movie from that set."
 msgstr ""
 
 #. Description of setting "Videos -> Playback -> Allow hardware acceleration (DXVA2)" with label #13427
@@ -17698,7 +17690,7 @@ msgstr ""
 #. Description of setting "Services -> AirPlay -> iOS 8 compatibility mode" with label #1268
 #: system/settings/settings.xml
 msgctxt "#36549"
-msgid "Use iOS8 compatible AirPlay support. If you have trouble with older iOS devices detecting this application as a valid target try switching this off. This option requires a restart to take effect!"
+msgid "Enables support for receving videos and pictures via AirPlay. This needs to be disabled when using iOS 9 or later clients to restore music streaming via AirPlay. Videos and Pictures are only supported for iOS clients using iOS 8.x and older."
 msgstr ""
 
 #. Name of a setting
@@ -18111,7 +18103,7 @@ msgstr ""
 #. Used for the viewstate selection
 #: xbmc/video/GUIViewStateVideo.xml
 msgctxt "#38018"
-msgid "User rating"
+msgid "My rating"
 msgstr ""
 
 #. Setting #38019 "Settings -> System -> Audio output -> Support 8 channel DTS-HD audio decoding"
@@ -18124,4 +18116,15 @@ msgstr ""
 #: system/settings/settings.xml
 msgctxt "#38020"
 msgid "Enables decoding of high quality DTS-HD audio streams. Note: This increases CPU load and is only available when DTS and DTS-HD audio passthrough are disabled."
+msgstr ""
+
+#. Used for the viewstate selection
+#: xbmc/video/dialogs/GUIDialogVideoInfo.cpp
+msgctxt "#38022"
+msgid "No rating"
+msgstr ""
+
+#. Used in Confluence
+msgctxt "#38023"
+msgid "Set my rating"
 msgstr ""

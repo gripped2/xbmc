@@ -81,15 +81,17 @@ void CGUIControlGroupList::Process(unsigned int currentTime, CDirtyRegionList &d
       g_graphicsContext.SetOrigin(m_posX + pos - m_scroller.GetValue(), m_posY);
     control->DoProcess(currentTime, dirtyregions);
 
-    if (IsControlOnScreen(pos, control))
-    {
-      if (control->HasFocus())
-        m_focusedPosition = index;
-      index++;
-    }
-
     if (control->IsVisible())
+    {
+      if (IsControlOnScreen(pos, control))
+      {
+        if (control->HasFocus())
+          m_focusedPosition = index;
+        index++;
+      }
+
       pos += Size(control) + m_itemGap;
+    }
     g_graphicsContext.RestoreOrigin();
   }
   CGUIControl::Process(currentTime, dirtyregions);
@@ -218,6 +220,9 @@ bool CGUIControlGroupList::OnMessage(CGUIMessage& message)
 
 void CGUIControlGroupList::ValidateOffset()
 {
+  // calculate item gap. this needs to be done
+  // before fetching the total size
+  CalculateItemGap();
   // calculate how many items we have on this page
   m_totalSize = GetTotalSize();
   // check our m_offset range
@@ -500,13 +505,33 @@ bool CGUIControlGroupList::IsLastFocusableControl(const CGUIControl *control) co
   return false;
 }
 
+void CGUIControlGroupList::CalculateItemGap()
+{
+  if (m_alignment & XBFONT_JUSTIFIED)
+  {
+    int itemsCount = 0;
+    float itemsSize = 0;
+    for (const auto& child : m_children)
+    {
+      if (child->IsVisible())
+      {
+        itemsSize += Size(child);
+        itemsCount++;
+      }
+    }
+
+    if (itemsCount > 0)
+      m_itemGap = (Size() - itemsSize) / itemsCount;
+  }
+}
+
 float CGUIControlGroupList::GetAlignOffset() const
 {
   if (m_totalSize < Size())
   {
     if (m_alignment & XBFONT_RIGHT)
       return Size() - m_totalSize;
-    if (m_alignment & XBFONT_CENTER_X)
+    if (m_alignment & (XBFONT_CENTER_X | XBFONT_JUSTIFIED))
       return (Size() - m_totalSize)*0.5f;
   }
   return 0.0f;

@@ -1,6 +1,7 @@
+#pragma once
 /*
- *      Copyright (C) 2010-2013 Team XBMC
- *      http://xbmc.org
+ *      Copyright (C) 2005-2015 Team Kodi
+ *      http://kodi.tv
  *
  *  This Program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -18,20 +19,16 @@
  *
  */
 
-#import <BackRow/BackRow.h>
+#include "ImusicInfoTagLoader.h"
 
-@class KodiTopShelfController;
+namespace MUSIC_INFO
+{
+  class CMusicInfoTagLoaderFFmpeg: public IMusicInfoTagLoader
+  {
+  public:
+    CMusicInfoTagLoaderFFmpeg(void);
+    virtual ~CMusicInfoTagLoaderFFmpeg();
 
-//--------------------------------------------------------------
-@interface KodiAppliance : BRBaseAppliance {
-  NSArray *_applianceCategories;
-  KodiTopShelfController *_topShelfController;
+    virtual bool Load(const std::string& strFileName, CMusicInfoTag& tag, EmbeddedArt *art = NULL);
+  };
 }
-@property(nonatomic, readonly, retain) id topShelfController;
-
-- (id) initWithApplianceInfo:(id) applianceInfo;
-- (void) setTopShelfController:(id) topShelfControl;
-- (void) setApplianceCategories:(id) applianceCategories;
-- (void) XBMCfixUIDevice;
-- (id) init;
-@end
