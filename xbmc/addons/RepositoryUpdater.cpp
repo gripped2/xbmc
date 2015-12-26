@@ -63,8 +63,8 @@ void CRepositoryUpdater::OnJobComplete(unsigned int jobID, bool success, CJob* j
 
     if (CSettings::GetInstance().GetInt(CSettings::SETTING_GENERAL_ADDONUPDATES) == AUTO_UPDATES_NOTIFY)
     {
-      VECADDONS hasUpdate;
-      if (CAddonMgr::GetInstance().GetAllOutdatedAddons(hasUpdate) && !hasUpdate.empty())
+      VECADDONS hasUpdate = CAddonMgr::GetInstance().GetOutdated();
+      if (!hasUpdate.empty())
       {
         if (hasUpdate.size() == 1)
           CGUIDialogKaiToast::QueueNotification(
@@ -118,7 +118,7 @@ void CRepositoryUpdater::CheckForUpdates(const ADDON::RepositoryPtr& repo, bool 
     m_doneEvent.Reset();
     if (showProgress)
       SetProgressIndicator(job);
-    CJobManager::GetInstance().AddJob(job, this, CJob::PRIORITY_LOW_PAUSABLE);
+    CJobManager::GetInstance().AddJob(job, this, CJob::PRIORITY_LOW);
   }
   else
   {
@@ -134,6 +134,15 @@ void CRepositoryUpdater::Await()
 
 void CRepositoryUpdater::OnTimeout()
 {
+  //workaround
+  if (g_windowManager.GetActiveWindow() == WINDOW_FULLSCREEN_VIDEO ||
+      g_windowManager.GetActiveWindow() == WINDOW_SLIDESHOW)
+  {
+    CLog::Log(LOGDEBUG,"CRepositoryUpdater: busy playing. postponing scheduled update");
+    m_timer.RestartAsync(2 * 60 * 1000);
+    return;
+  }
+
   CLog::Log(LOGDEBUG,"CRepositoryUpdater: running scheduled update");
   CheckForUpdates();
 }

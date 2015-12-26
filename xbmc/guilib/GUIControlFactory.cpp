@@ -100,7 +100,6 @@ static const ControlMapping controls[] =
     {"resize",            CGUIControl::GUICONTROL_RESIZE},
     {"edit",              CGUIControl::GUICONTROL_EDIT},
     {"visualisation",     CGUIControl::GUICONTROL_VISUALISATION},
-    {"karvisualisation",  CGUIControl::GUICONTROL_VISUALISATION},
     {"renderaddon",       CGUIControl::GUICONTROL_RENDERADDON},
     {"multiimage",        CGUIControl::GUICONTROL_MULTI_IMAGE},
     {"grouplist",         CGUIControl::GUICONTROL_GROUPLIST},
@@ -832,6 +831,7 @@ CGUIControl* CGUIControlFactory::Create(int parentID, const CRect &rect, TiXmlEl
   GetActions(pControlNode, "onnext",  actions[ACTION_NEXT_CONTROL]);
   GetActions(pControlNode, "onprev",  actions[ACTION_PREV_CONTROL]);
   GetActions(pControlNode, "onback",  actions[ACTION_NAV_BACK]);
+  GetActions(pControlNode, "oninfo",  actions[ACTION_SHOW_INFO]);
 
   if (XMLUtils::GetInt(pControlNode, "defaultcontrol", defaultControl))
   {
@@ -1374,6 +1374,8 @@ CGUIControl* CGUIControlFactory::Create(int parentID, const CRect &rect, TiXmlEl
       ((CGUIListContainer *)control)->SetRenderOffset(offset);
       ((CGUIListContainer *)control)->SetAutoScrolling(pControlNode);
       ((CGUIListContainer *)control)->SetClickActions(clickActions);
+      ((CGUIListContainer *)control)->SetFocusActions(focusActions);
+      ((CGUIListContainer *)control)->SetUnFocusActions(unfocusActions);
     }
     break;
   case CGUIControl::GUICONTAINER_WRAPLIST:
@@ -1389,6 +1391,8 @@ CGUIControl* CGUIControlFactory::Create(int parentID, const CRect &rect, TiXmlEl
       ((CGUIWrappingListContainer *)control)->SetRenderOffset(offset);
       ((CGUIWrappingListContainer *)control)->SetAutoScrolling(pControlNode);
       ((CGUIWrappingListContainer *)control)->SetClickActions(clickActions);
+      ((CGUIWrappingListContainer *)control)->SetFocusActions(focusActions);
+      ((CGUIWrappingListContainer *)control)->SetUnFocusActions(unfocusActions);
     }
     break;
   case CGUIControl::GUICONTAINER_EPGGRID:
@@ -1412,6 +1416,8 @@ CGUIControl* CGUIControlFactory::Create(int parentID, const CRect &rect, TiXmlEl
       ((CGUIFixedListContainer *)control)->SetRenderOffset(offset);
       ((CGUIFixedListContainer *)control)->SetAutoScrolling(pControlNode);
       ((CGUIFixedListContainer *)control)->SetClickActions(clickActions);
+      ((CGUIFixedListContainer *)control)->SetFocusActions(focusActions);
+      ((CGUIFixedListContainer *)control)->SetUnFocusActions(unfocusActions);
     }
     break;
   case CGUIControl::GUICONTAINER_PANEL:
@@ -1427,6 +1433,8 @@ CGUIControl* CGUIControlFactory::Create(int parentID, const CRect &rect, TiXmlEl
       ((CGUIPanelContainer *)control)->SetRenderOffset(offset);
       ((CGUIPanelContainer *)control)->SetAutoScrolling(pControlNode);
       ((CGUIPanelContainer *)control)->SetClickActions(clickActions);
+      ((CGUIPanelContainer *)control)->SetFocusActions(focusActions);
+      ((CGUIPanelContainer *)control)->SetUnFocusActions(unfocusActions);
     }
     break;
   case CGUIControl::GUICONTROL_TEXTBOX:
@@ -1497,7 +1505,7 @@ CGUIControl* CGUIControlFactory::Create(int parentID, const CRect &rect, TiXmlEl
     control->SetEnableCondition(enableCondition);
     control->SetAnimations(animations);
     control->SetColorDiffuse(colorDiffuse);
-    control->SetNavigationActions(actions);
+    control->SetActions(actions);
     control->SetPulseOnSelect(bPulse);
     if (hasCamera)
       control->SetCamera(camera);

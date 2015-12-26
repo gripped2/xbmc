@@ -37,7 +37,13 @@ class CAlbum
 {
 public:
   CAlbum(const CFileItem& item);
-  CAlbum() { idAlbum = 0; iRating = 0; iYear = 0; iTimesPlayed = 0; dateAdded.Reset(); lastPlayed.Reset(); releaseType = Album; };
+  CAlbum() : idAlbum{0}
+    , iRating{0}
+    , iYear{0}
+    , bCompilation{false}
+    , iTimesPlayed{0}
+    , releaseType{Album}
+  {};
   bool operator<(const CAlbum &a) const;
   void MergeScrapedAlbum(const CAlbum& album, bool override = true);
 
@@ -86,6 +92,11 @@ public:
   \return album artist names as a single string
   */
   const std::string GetAlbumArtistString() const;
+
+  /*! \brief Get album artist IDs (for json rpc) from the vector of artistcredits objects
+  \return album artist IDs as a vector of integers
+  */
+  const std::vector<int> GetArtistIDArray() const;
 
   typedef enum ReleaseType {
     Album = 0,

@@ -217,7 +217,7 @@ bool CAESinkAUDIOTRACK::Initialize(AEAudioFormat &format, std::string &device)
     m_passthrough = false;
 
 #if defined(HAS_LIBAMCODEC)
-  if (CSettings::GetInstance().GetBool(CSettings::SETTING_VIDEOPLAYER_USEAMCODEC))
+  if (aml_present() && CSettings::GetInstance().GetBool(CSettings::SETTING_VIDEOPLAYER_USEAMCODEC))
     aml_set_audio_passthrough(m_passthrough);
 #endif
 
@@ -362,23 +362,6 @@ void CAESinkAUDIOTRACK::Drain()
   // we should not return from drain as long the device is in playing state
   m_at_jni->stop();
   m_frames_written = 0;
-}
-
-bool CAESinkAUDIOTRACK::HasVolume()
-{
-  return true;
-}
-
-void  CAESinkAUDIOTRACK::SetVolume(float scale)
-{
-  // Ignore in passthrough
-  if (m_passthrough)
-    return;
-
-  if (!m_at_jni)
-    return;
-
-  CXBMCApp::SetSystemVolume(scale);
 }
 
 void CAESinkAUDIOTRACK::EnumerateDevicesEx(AEDeviceInfoList &list, bool force)

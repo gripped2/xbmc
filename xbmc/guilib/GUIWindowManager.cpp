@@ -139,11 +139,6 @@
 #include "settings/dialogs/GUIDialogAudioDSPManager.h"
 #include "settings/dialogs/GUIDialogAudioDSPSettings.h"
 
-#ifdef HAS_KARAOKE
-#include "music/karaoke/GUIDialogKaraokeSongSelector.h"
-#include "music/karaoke/GUIWindowKaraokeLyrics.h"
-#endif
-
 #include "peripherals/dialogs/GUIDialogPeripheralSettings.h"
 #include "addons/AddonCallbacksGUI.h"
 
@@ -212,10 +207,6 @@ void CGUIWindowManager::CreateWindows()
   Add(new CGUIDialogButtonMenu);
   Add(new CGUIDialogMuteBug);
   Add(new CGUIDialogPlayerControls);
-#ifdef HAS_KARAOKE
-  Add(new CGUIDialogKaraokeSongSelectorSmall);
-  Add(new CGUIDialogKaraokeSongSelectorLarge);
-#endif
   Add(new CGUIDialogSlider);
   Add(new CGUIDialogMusicOSD);
   Add(new CGUIDialogVisualisationPresetList);
@@ -286,9 +277,6 @@ void CGUIWindowManager::CreateWindows()
   Add(new CGUIWindowFullScreen);
   Add(new CGUIWindowVisualisation);
   Add(new CGUIWindowSlideShow);
-#ifdef HAS_KARAOKE
-  Add(new CGUIWindowKaraokeLyrics);
-#endif
 
   Add(new CGUIDialogVideoOSD);
   Add(new CGUIWindowScreensaver);
@@ -322,8 +310,6 @@ bool CGUIWindowManager::DestroyWindows()
     Delete(WINDOW_DIALOG_BUTTON_MENU);
     Delete(WINDOW_DIALOG_CONTEXT_MENU);
     Delete(WINDOW_DIALOG_PLAYER_CONTROLS);
-    Delete(WINDOW_DIALOG_KARAOKE_SONGSELECT);
-    Delete(WINDOW_DIALOG_KARAOKE_SELECTOR);
     Delete(WINDOW_DIALOG_MUSIC_OSD);
     Delete(WINDOW_DIALOG_VIS_PRESET_LIST);
     Delete(WINDOW_DIALOG_SELECT);
@@ -383,7 +369,6 @@ bool CGUIWindowManager::DestroyWindows()
     Delete(WINDOW_STARTUP_ANIM);
     Delete(WINDOW_LOGIN_SCREEN);
     Delete(WINDOW_VISUALISATION);
-    Delete(WINDOW_KARAOKELYRICS);
     Delete(WINDOW_SETTINGS_MENU);
     Delete(WINDOW_SETTINGS_PROFILES);
     Delete(WINDOW_SETTINGS_MYPICTURES);  // all the settings categories
@@ -860,7 +845,7 @@ void CGUIWindowManager::OnApplicationMessage(ThreadMessage* pMsg)
   {
     CGUIWindow *window = static_cast<CGUIWindow *>(pMsg->lpVoid);
     if (window)
-      window->Close(pMsg->param1 & 0x1 ? true : false, pMsg->param1, pMsg->param1 & 0x2 ? true : false);
+      window->Close((pMsg->param1 & 0x1) ? true : false, pMsg->param1, (pMsg->param1 & 0x2) ? true : false);
   }
   break;
 
@@ -1156,11 +1141,13 @@ CGUIWindow* CGUIWindowManager::GetWindow(int id) const
   CGUIWindow *window;
   if (id == 0 || id == WINDOW_INVALID)
     return NULL;
+
+  CSingleLock lock(g_graphicsContext);
+
   window = m_idCache.Get(id);
   if (window)
     return window;
 
-  CSingleLock lock(g_graphicsContext);
   WindowMap::const_iterator it = m_mapWindows.find(id);
   if (it != m_mapWindows.end())
     window = (*it).second;

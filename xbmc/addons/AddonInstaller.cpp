@@ -269,8 +269,8 @@ bool CAddonInstaller::InstallFromZip(const std::string &path)
   if (!CDirectory::GetDirectory(zipDir, items) || items.Size() != 1 || !items[0]->m_bIsFolder)
   {
     CEventLog::GetInstance().AddWithNotification(
-      EventPtr(new CNotificationEvent(EventLevelError, 24045,
-                   StringUtils::Format(g_localizeStrings.Get(24143).c_str(), path.c_str()))), false);
+      EventPtr(new CNotificationEvent(24045, StringUtils::Format(g_localizeStrings.Get(24143).c_str(), path.c_str()),
+                   "special://xbmc/media/icon256x256.png", EventLevelError)));
     return false;
   }
 
@@ -290,8 +290,8 @@ bool CAddonInstaller::InstallFromZip(const std::string &path)
   }
 
   CEventLog::GetInstance().AddWithNotification(
-    EventPtr(new CNotificationEvent(EventLevelError, 24045,
-                 StringUtils::Format(g_localizeStrings.Get(24143).c_str(), path.c_str()))), false);
+    EventPtr(new CNotificationEvent(24045, StringUtils::Format(g_localizeStrings.Get(24143).c_str(), path.c_str()),
+                 "special://xbmc/media/icon256x256.png", EventLevelError)));
   return false;
 }
 
@@ -340,7 +340,7 @@ bool CAddonInstaller::CheckDependencies(const AddonPtr &addon,
         database.Close();
 
         // fill in the details of the failed dependency
-        failedDep.first = addon->ID();
+        failedDep.first = addonID;
         failedDep.second = version.asString();
 
         return false;
@@ -424,15 +424,16 @@ void CAddonInstaller::PrunePackageCache()
     delete it->second;
 }
 
-void CAddonInstaller::InstallUpdates()
+void CAddonInstaller::InstallUpdates(bool includeBlacklisted /* = false */)
 {
-  VECADDONS addons;
-  if (CAddonMgr::GetInstance().GetAllOutdatedAddons(addons, true))
+  VECADDONS addons = CAddonMgr::GetInstance().GetOutdated();
+  if (addons.empty())
+    return;
+
+  for (const auto& addon : addons)
   {
-    for (const auto& addon : addons)
-    {
+    if (includeBlacklisted || !CAddonMgr::GetInstance().IsBlacklisted(addon->ID()))
       CAddonInstaller::GetInstance().InstallOrUpdate(addon->ID());
-    }
   }
 }
 
@@ -442,11 +443,9 @@ bool CAddonInstaller::GetRepoForAddon(const std::string& addonId, RepositoryPtr&
   if (!database.Open())
     return false;
 
-  std::vector<std::pair<ADDON::AddonVersion, std::string>> versions;
-  if (!database.GetAvailableVersions(addonId, versions) || versions.empty())
+  auto repoId = database.GetAddonVersion(addonId).second;
+  if (repoId.empty())
     return false;
-
-  auto repoId = std::min_element(versions.begin(), versions.end())->second;
 
   AddonPtr tmp;
   if (!CAddonMgr::GetInstance().GetAddon(repoId, tmp, ADDON_REPOSITORY))
@@ -624,10 +623,8 @@ bool CAddonInstallJob::DoWork()
 
   ADDON::OnPostInstall(m_addon, m_update, IsModal());
 
-  //Clear addon from the disabled table
-  CAddonDatabase database;
-  database.Open();
-  database.DisableAddon(m_addon->ID(), false);
+  //Enable it if it was previously disabled
+  CAddonMgr::GetInstance().EnableAddon(m_addon->ID());
 
   // and we're done!
   MarkFinished();
@@ -843,9 +840,9 @@ void CAddonInstallJob::ReportInstallError(const std::string& addonID, const std:
   else
   {
     activity =
-      EventPtr(new CNotificationEvent(EventLevelError, 24045,
-                   !msg.empty() ? msg : StringUtils::Format(g_localizeStrings.Get(24143).c_str(),
-                   fileName.c_str())));
+      EventPtr(new CNotificationEvent(24045,
+                   !msg.empty() ? msg : StringUtils::Format(g_localizeStrings.Get(24143).c_str(), fileName.c_str()),
+                   EventLevelError));
 
     if (IsModal())
       CGUIDialogOK::ShowAndGetInput(CVariant{fileName}, CVariant{msg});
@@ -894,6 +891,9 @@ bool CAddonUnInstallJob::DoWork()
   if (!database.Open() || !database.GetAddon(m_addon->ID(), addon) || addon == NULL)
     addon = m_addon;
   CEventLog::GetInstance().Add(EventPtr(new CAddonManagementEvent(addon, 24144)));
+
+  CAddonMgr::GetInstance().OnPostUnInstall(m_addon->ID());
+  database.OnPostUnInstall(m_addon->ID());
 
   ADDON::OnPostUnInstall(m_addon);
   return true;

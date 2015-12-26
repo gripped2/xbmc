@@ -73,7 +73,6 @@ namespace MEDIA_DETECT
 #include "interfaces/IActionListener.h"
 
 class CSeekHandler;
-class CKaraokeLyricsManager;
 class CInertialScrollingHandler;
 class DPMSSupport;
 class CSplash;
@@ -319,8 +318,6 @@ public:
   PlayState m_ePlayState;
   CCriticalSection m_playStateMutex;
 
-  CKaraokeLyricsManager* m_pKaraokeMgr;
-
   PLAYERCOREID m_eForcedNextPlayer;
   std::string m_strPlayListFile;
 
@@ -380,7 +377,7 @@ public:
 
   ReplayGainSettings& GetReplayGainSettings() { return m_replayGainSettings; }
 
-  void SetLoggingIn(bool loggingIn) { m_loggingIn = loggingIn; }
+  void SetLoggingIn(bool switchingProfiles);
   
   /*!
    \brief Register an action listener.
@@ -416,7 +413,8 @@ protected:
   bool m_skinReverting;
   std::string m_skinReloadSettingIgnore;
 
-  bool m_loggingIn;
+  bool m_saveSkinOnUnloading;
+  bool m_autoExecScriptExecuted;
 
 #if defined(TARGET_DARWIN_IOS)
   friend class CWinEventsIOS;

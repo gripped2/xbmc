@@ -875,6 +875,8 @@ void CGUIDialogVideoInfo::OnSetUserrating()
     for (int i = 1; i <= 10; i++)
       dialog->Add(StringUtils::Format("%s: %i", g_localizeStrings.Get(563).c_str(), i));
 
+    dialog->SetSelected(m_movieItem->GetVideoInfoTag()->m_iUserRating);
+
     dialog->Open();
 
     int iItem = dialog->GetSelectedLabel();
@@ -1567,7 +1569,7 @@ bool CGUIDialogVideoInfo::GetItemsForTag(const std::string &strHeading, const st
     if (!showAll)
       videoUrl.AddOption("tagid", idTag);
     else
-      filter.where = videodb.PrepareSQL("%s_view.%s NOT IN (SELECT tag_link.media_type FROM tag_link WHERE tag_link.tag_id = %d AND tag_link.media_type = '%s')", type.c_str(), idColumn.c_str(), idTag, type.c_str());
+      filter.where = videodb.PrepareSQL("%s_view.%s NOT IN (SELECT tag_link.media_id FROM tag_link WHERE tag_link.tag_id = %d AND tag_link.media_type = '%s')", type.c_str(), idColumn.c_str(), idTag, type.c_str());
   }
 
   CFileItemList listItems;

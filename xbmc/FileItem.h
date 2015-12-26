@@ -175,7 +175,6 @@ public:
    */
   bool IsAudio() const;
 
-  bool IsKaraoke() const;
   bool IsCUESheet() const;
   bool IsInternetStream(const bool bStrictCheck = false) const;
   bool IsPlayList() const;
@@ -467,6 +466,13 @@ public:
    \param video video details to use and set
    */
   void SetFromVideoInfoTag(const CVideoInfoTag &video);
+
+  /*! \brief Sets details using the information from the CMusicInfoTag object
+  Sets the musicinfotag and uses its information to set the label and path.
+  \param music music details to use and set
+  */
+  void SetFromMusicInfoTag(const MUSIC_INFO::CMusicInfoTag &music);
+
   /*! \brief Sets details using the information from the CAlbum object
    Sets the album in the music info tag and uses its information to set the
    label and album-specific properties.

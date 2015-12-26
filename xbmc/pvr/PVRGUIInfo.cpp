@@ -89,6 +89,12 @@ void CPVRGUIInfo::ResetProperties(void)
   m_bHasTVChannels              = false;
   m_bHasRadioChannels           = false;
   m_bIsTimeshifting             = false;
+  m_iTimeshiftStartTime         = time_t(0);
+  m_iTimeshiftEndTime           = time_t(0);
+  m_iTimeshiftPlayTime          = time_t(0);
+  m_strTimeshiftStartTime.clear();
+  m_strTimeshiftEndTime.clear();
+  m_strTimeshiftPlayTime.clear();
 
   ResetPlayingTag();
   ClearQualityInfo(m_qualityInfo);
@@ -125,10 +131,12 @@ void CPVRGUIInfo::Notify(const Observable &obs, const ObservableMessage msg)
 
 void CPVRGUIInfo::ShowPlayerInfo(int iTimeout)
 {
-  CSingleLock lock(m_critSection);
+  {
+    CSingleLock lock(m_critSection);
 
-  if (iTimeout > 0)
-    m_ToggleShowInfo.Set(iTimeout * 1000);
+    if (iTimeout > 0)
+      m_ToggleShowInfo.Set(iTimeout * 1000);
+  }
 
   g_infoManager.SetShowInfo(true);
 }
@@ -140,11 +148,20 @@ void CPVRGUIInfo::ToggleShowInfo(void)
   if (m_ToggleShowInfo.IsTimePast())
   {
     m_ToggleShowInfo.SetInfinite();
+
+    /* release our lock while calling into global objects (which have
+       their own locks) to avoid deadlocks */
+    lock.Leave();
+
     g_infoManager.SetShowInfo(false);
     g_PVRManager.UpdateCurrentChannel();
   }
   else if (!g_infoManager.GetShowInfo()) // channel infos (no longer) displayed?
   {
+    /* release our lock while calling into global objects (which have
+       their own locks) to avoid deadlocks */
+    lock.Leave();
+
     g_PVRManager.UpdateCurrentChannel();
   }
 }

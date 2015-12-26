@@ -40,6 +40,8 @@ namespace PVR
     bool OnContextButton(int itemNumber, CONTEXT_BUTTON button);
     void ResetObservers(void);
     void UnregisterObservers(void);
+    bool Update(const std::string &strDirectory, bool updateFilterPath = true);
+    void UpdateButtons(void);
 
   protected:
     void UpdateSelectedItemPath();
@@ -55,6 +57,7 @@ namespace PVR
     bool OnContextButtonPlay(CFileItem *item, CONTEXT_BUTTON button);
     bool OnContextButtonStartRecord(CFileItem *item, CONTEXT_BUTTON button);
     bool OnContextButtonStopRecord(CFileItem *item, CONTEXT_BUTTON button);
+    bool OnContextButtonDeleteTimer(CFileItem *item, CONTEXT_BUTTON button);
 
     void GetViewChannelItems(CFileItemList &items);
     void GetViewNowItems(CFileItemList &items);

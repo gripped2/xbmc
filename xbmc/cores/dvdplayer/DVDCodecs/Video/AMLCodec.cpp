@@ -41,6 +41,10 @@
 #include "utils/BitstreamConverter.h"
 #endif
 
+extern "C" {
+#include "libavutil/avutil.h"
+}  // extern "C"
+
 #include <unistd.h>
 #include <queue>
 #include <vector>
@@ -92,13 +96,12 @@ public:
   virtual int codec_set_cntl_mode(codec_para_t *pcodec, unsigned int mode)=0;
   virtual int codec_set_cntl_avthresh(codec_para_t *pcodec, unsigned int avthresh)=0;
   virtual int codec_set_cntl_syncthresh(codec_para_t *pcodec, unsigned int syncthresh)=0;
-
 };
 
 class DllLibAmCodec : public DllDynamic, DllLibamCodecInterface
 {
-  // libamcodec is static linked into libamplayer.so
-  DECLARE_DLL_WRAPPER(DllLibAmCodec, "libamcodec.so")
+  // libamcodec is static linked into libamplayer.so or libamcodec.so
+  DECLARE_DLL_WRAPPER(DllLibAmCodec, "libamplayer.so")
 
   DEFINE_METHOD1(int, codec_init,               (codec_para_t *p1))
   DEFINE_METHOD1(int, codec_close,              (codec_para_t *p1))
@@ -132,7 +135,6 @@ class DllLibAmCodec : public DllDynamic, DllLibamCodecInterface
     RESOLVE_METHOD(codec_set_cntl_mode)
     RESOLVE_METHOD(codec_set_cntl_avthresh)
     RESOLVE_METHOD(codec_set_cntl_syncthresh)
-
   END_METHOD_RESOLVE()
 
 public:
@@ -320,8 +322,6 @@ typedef struct am_private_t
   unsigned int      video_ratio64;
   unsigned int      video_rate;
   unsigned int      video_rotation_degree;
-  int               flv_flag;
-  int               h263_decodable;
   int               extrasize;
   uint8_t           *extradata;
   DllLibAmCodec     *m_dll;
@@ -357,7 +357,7 @@ void dumpfile_write(am_private_t *para, void* buf, int bufsiz)
   }
 
   if (para->dumpdemux && para->dumpfile != -1)
-    int ret = write(para->dumpfile, buf, bufsiz);
+    write(para->dumpfile, buf, bufsiz);
 }
 
 /*************************************************************************/
@@ -389,7 +389,7 @@ static int set_pts_pcrscr(int64_t value)
     char pts_str[64];
     unsigned long pts = (unsigned long)value;
     sprintf(pts_str, "0x%lx", pts);
-    int ret = write(fd, pts_str, strlen(pts_str));
+    write(fd, pts_str, strlen(pts_str));
     close(fd);
     return 0;
   }
@@ -710,7 +710,7 @@ int write_av_packet(am_private_t *para, am_packet_t *pkt)
         }
         pkt->newflag = 0;
     }
-
+	
     buf = pkt->data;
     size = pkt->data_size ;
     if (size == 0 && pkt->isvalid) {
@@ -1232,6 +1232,10 @@ int set_header_info(am_private_t *para)
       {
         return divx3_prefix(pkt);
       }
+      else if (para->video_codec_type == VIDEO_DEC_FORMAT_H263)
+      {
+        return PLAYER_UNSUPPORT;
+      }
     } else if (para->video_format == VFORMAT_VC1) {
         if (para->video_codec_type == VIDEO_DEC_FORMAT_WMV3) {
             unsigned i, check_sum = 0, data_len = 0;
@@ -1378,7 +1382,12 @@ CAMLCodec::CAMLCodec() : CThread("CAMLCodec")
   am_private = new am_private_t;
   memset(am_private, 0, sizeof(am_private_t));
   m_dll = new DllLibAmCodec;
-  m_dll->Load();
+  if(!m_dll->Load())
+  {
+    CLog::Log(LOGWARNING, "CAMLCodec::CAMLCodec libamplayer.so not found, trying libamcodec.so instead");
+    m_dll->SetFile("libamcodec.so");
+    m_dll->Load();
+  }
   am_private->m_dll = m_dll;
 }
 
@@ -1426,7 +1435,7 @@ bool CAMLCodec::OpenDecoder(CDVDStreamInfo &hints)
   // handle video ratio
   AVRational video_ratio       = av_d2q(1, SHRT_MAX);
   //if (!hints.forced_aspect)
-  //  video_ratio = m_dll->av_d2q(hints.aspect, SHRT_MAX);
+  //  video_ratio = av_d2q(hints.aspect, SHRT_MAX);
   am_private->video_ratio      = ((int32_t)video_ratio.num << 16) | video_ratio.den;
   am_private->video_ratio64    = ((int64_t)video_ratio.num << 32) | video_ratio.den;
 
@@ -1501,13 +1510,6 @@ bool CAMLCodec::OpenDecoder(CDVDStreamInfo &hints)
   if (am_private->video_codec_type == VIDEO_DEC_FORMAT_UNKNOW)
     am_private->video_codec_type = codec_tag_to_vdec_type(am_private->video_codec_id);
 
-  am_private->flv_flag = 0;
-  if (am_private->video_codec_id == AV_CODEC_ID_FLV1)
-  {
-    am_private->video_codec_tag = CODEC_TAG_F263;
-    am_private->flv_flag = 1;
-  }
-
   CLog::Log(LOGDEBUG, "CAMLCodec::OpenDecoder "
     "hints.width(%d), hints.height(%d), hints.codec(%d), hints.codec_tag(%d), hints.pid(%d)",
     hints.width, hints.height, hints.codec, hints.codec_tag, hints.pid);
@@ -1552,7 +1554,7 @@ bool CAMLCodec::OpenDecoder(CDVDStreamInfo &hints)
       // h264 in an avi file
       if (m_hints.ptsinvalid)
         am_private->gcodec.param = (void*)(EXTERNAL_PTS | SYNC_OUTSIDE);
-      break;
+      break; 
     case VFORMAT_REAL:
       am_private->stream_type = AM_STREAM_RM;
       am_private->vcodec.noblock = 1;
@@ -1774,7 +1776,8 @@ int CAMLCodec::Decode(uint8_t *pData, size_t iSize, double dts, double pts)
     // loop until we write all into codec, am_pkt.isvalid
     // will get set to zero once everything is consumed.
     // PLAYER_SUCCESS means all is ok, not all bytes were written.
-    while (am_private->am_pkt.isvalid)
+    int loop = 0;
+    while (am_private->am_pkt.isvalid && loop < 100)
     {
       // abort on any errors.
       if (write_av_packet(am_private, &am_private->am_pkt) != PLAYER_SUCCESS)
@@ -1782,6 +1785,12 @@ int CAMLCodec::Decode(uint8_t *pData, size_t iSize, double dts, double pts)
 
       if (am_private->am_pkt.isvalid)
         CLog::Log(LOGDEBUG, "CAMLCodec::Decode: write_av_packet looping");
+      loop++;
+    }
+    if (loop == 100)
+    {
+      // Decoder got stuck; Reset
+      Reset();
     }
 
     // if we seek, then GetTimeSize is wrong as
@@ -1972,16 +1981,20 @@ void CAMLCodec::Process()
 
         double error = app_pts - (double)pts_video/PTS_FREQ;
         double abs_error = fabs(error);
-        if (abs_error > 0.150)
+        if (abs_error > 0.125)
         {
-          // big error so try to reset pts_pcrscr
-          SetVideoPtsSeconds(app_pts);
+          //CLog::Log(LOGDEBUG, "CAMLCodec::Process pts diff = %f", error);
+          if (abs_error > 0.150)
+          {
+            // big error so try to reset pts_pcrscr
+            SetVideoPtsSeconds(app_pts);
+          }
+          else
+          {
+            // small error so try to avoid a frame jump
+            SetVideoPtsSeconds((double)pts_video/PTS_FREQ + error/4);
+          }
         }
-        else
-        {
-          // small error so try to avoid a frame jump
-          SetVideoPtsSeconds((double)pts_video/PTS_FREQ + error/4);
-        }        
       }
     }
     else

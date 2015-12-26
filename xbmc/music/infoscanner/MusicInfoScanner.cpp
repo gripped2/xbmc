@@ -459,9 +459,9 @@ bool CMusicInfoScanner::DoScan(const std::string& strDirectory)
   if ((m_flags & SCAN_RESCAN) || !m_musicDatabase.GetPathHash(strDirectory, dbHash) || dbHash != hash)
   { // path has changed - rescan
     if (dbHash.empty())
-      CLog::Log(LOGDEBUG, "%s Scanning dir '%s' as not in the database", __FUNCTION__, strDirectory.c_str());
+      CLog::Log(LOGDEBUG, "%s Scanning dir '%s' as not in the database", __FUNCTION__, CURL::GetRedacted(strDirectory).c_str());
     else
-      CLog::Log(LOGDEBUG, "%s Rescanning dir '%s' due to change", __FUNCTION__, strDirectory.c_str());
+      CLog::Log(LOGDEBUG, "%s Rescanning dir '%s' due to change", __FUNCTION__, CURL::GetRedacted(strDirectory).c_str());
 
     // filter items in the sub dir (for .cue sheet support)
     items.FilterCueItems();
@@ -479,7 +479,7 @@ bool CMusicInfoScanner::DoScan(const std::string& strDirectory)
   }
   else
   { // path is the same - no need to rescan
-    CLog::Log(LOGDEBUG, "%s Skipping dir '%s' due to no change", __FUNCTION__, strDirectory.c_str());
+    CLog::Log(LOGDEBUG, "%s Skipping dir '%s' due to no change", __FUNCTION__, CURL::GetRedacted(strDirectory).c_str());
     m_currentItem += CountFiles(items, false);  // false for non-recursive
 
     // updated the dialog with our progress
@@ -587,7 +587,6 @@ void CMusicInfoScanner::FileItemsToAlbums(CFileItemList& items, VECALBUMS& album
       {
         song.iTimesPlayed = it->second.iTimesPlayed;
         song.lastPlayed = it->second.lastPlayed;
-        song.iKaraokeNumber = it->second.iKaraokeNumber;
         if (song.rating == '0')    song.rating = it->second.rating;
         if (song.strThumb.empty()) song.strThumb = it->second.strThumb;
       }
@@ -986,9 +985,10 @@ loop:
   }
   else if (albumDownloadStatus == INFO_ADDED)
   {
-    album.MergeScrapedAlbum(albumInfo.GetAlbum(), CSettings::GetInstance().GetBool(CSettings::SETTING_MUSICLIBRARY_OVERRIDETAGS));
+    bool overridetags = CSettings::GetInstance().GetBool(CSettings::SETTING_MUSICLIBRARY_OVERRIDETAGS);
+    album.MergeScrapedAlbum(albumInfo.GetAlbum(), overridetags);
     m_musicDatabase.Open();
-    m_musicDatabase.UpdateAlbum(album);
+    m_musicDatabase.UpdateAlbum(album, overridetags);
     GetAlbumArtwork(album.idAlbum, album);
     m_musicDatabase.Close();
     albumInfo.SetLoaded(true);
@@ -1072,7 +1072,7 @@ INFO_RET CMusicInfoScanner::DownloadAlbumInfo(const CAlbum& album, const ADDON::
   CNfoFile nfoReader;
   if (XFILE::CFile::Exists(strNfo))
   {
-    CLog::Log(LOGDEBUG,"Found matching nfo file: %s", strNfo.c_str());
+    CLog::Log(LOGDEBUG,"Found matching nfo file: %s", CURL::GetRedacted(strNfo).c_str());
     result = nfoReader.Create(strNfo, info);
     if (result == CNfoFile::FULL_NFO)
     {
@@ -1293,7 +1293,7 @@ INFO_RET CMusicInfoScanner::DownloadArtistInfo(const CArtist& artist, const ADDO
   CNfoFile nfoReader;
   if (XFILE::CFile::Exists(strNfo))
   {
-    CLog::Log(LOGDEBUG,"Found matching nfo file: %s", strNfo.c_str());
+    CLog::Log(LOGDEBUG,"Found matching nfo file: %s", CURL::GetRedacted(strNfo).c_str());
     result = nfoReader.Create(strNfo, info);
     if (result == CNfoFile::FULL_NFO)
     {

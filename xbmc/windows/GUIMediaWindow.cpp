@@ -690,7 +690,7 @@ bool CGUIMediaWindow::GetDirectory(const std::string &strDirectory, CFileItemLis
   // TODO: Do we want to limit the directories we apply the video ones to?
   if (iWindow == WINDOW_VIDEO_NAV)
     regexps = g_advancedSettings.m_videoExcludeFromListingRegExps;
-  if (iWindow == WINDOW_MUSIC_FILES)
+  if (iWindow == WINDOW_MUSIC_FILES || iWindow == WINDOW_MUSIC_NAV)
     regexps = g_advancedSettings.m_audioExcludeFromListingRegExps;
   if (iWindow == WINDOW_PICTURES)
     regexps = g_advancedSettings.m_pictureExcludeFromListingRegExps;
@@ -777,7 +777,7 @@ bool CGUIMediaWindow::Update(const std::string &strDirectory, bool updateFilterP
       showLabel = 997;
     else if (iWindow == WINDOW_MUSIC_FILES)
       showLabel = 998;
-    else if (iWindow == WINDOW_FILES || iWindow == WINDOW_PROGRAMS)
+    else if (iWindow == WINDOW_FILES)
       showLabel = 1026;
   }
   if (m_vecItems->IsPath("sources://video/"))
@@ -786,8 +786,7 @@ bool CGUIMediaWindow::Update(const std::string &strDirectory, bool updateFilterP
     showLabel = 998;
   else if (m_vecItems->IsPath("sources://pictures/"))
     showLabel = 997;
-  else if (m_vecItems->IsPath("sources://programs/") ||
-           m_vecItems->IsPath("sources://files/"))
+  else if (m_vecItems->IsPath("sources://files/"))
     showLabel = 1026;
   if (showLabel && (m_vecItems->Size() == 0 || !m_guiState->DisableAddSourceButtons())) // add 'add source button'
   {
@@ -1017,9 +1016,6 @@ bool CGUIMediaWindow::OnClick(int iItem)
       return true;
     }
 
-    // If karaoke song is being played AND popup autoselector is enabled, the playlist should not be added
-    bool do_not_add_karaoke = CSettings::GetInstance().GetBool(CSettings::SETTING_KARAOKE_ENABLED) &&
-      CSettings::GetInstance().GetBool(CSettings::SETTING_KARAOKE_AUTOPOPUPSELECTOR) && pItem->IsKaraoke();
     bool autoplay = m_guiState.get() && m_guiState->AutoPlayNextItem();
 
     if (m_vecItems->IsPlugin())
@@ -1039,7 +1035,7 @@ bool CGUIMediaWindow::OnClick(int iItem)
     }
 
     if (autoplay && !g_partyModeManager.IsEnabled() && 
-        !pItem->IsPlayList() && !do_not_add_karaoke)
+        !pItem->IsPlayList())
     {
       return OnPlayAndQueueMedia(pItem);
     }

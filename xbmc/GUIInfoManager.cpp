@@ -4132,10 +4132,10 @@ std::string CGUIInfoManager::GetMusicTagLabel(int info, const CFileItem *item)
     if (tag.GetAlbum().size()) { return tag.GetAlbum(); }
     break;
   case MUSICPLAYER_ARTIST:
-    if (tag.GetArtist().size()) { return tag.GetArtistString(); }
+    if (tag.GetArtistString().size()) { return tag.GetArtistString(); }
     break;
   case MUSICPLAYER_ALBUM_ARTIST:
-    if (tag.GetAlbumArtist().size()) { return tag.GetAlbumArtistString(); }
+    if (tag.GetAlbumArtistString().size()) { return tag.GetAlbumArtistString(); }
     break;
   case MUSICPLAYER_YEAR:
     if (tag.GetYear()) { return tag.GetYearString(); }
@@ -4548,7 +4548,7 @@ int CGUIInfoManager::GetPlayTimeRemaining() const
 
 float CGUIInfoManager::GetSeekPercent() const
 {
-  if (g_infoManager.GetTotalPlayTime() == 0)
+  if (GetTotalPlayTime() == 0)
     return 0.0f;
 
   float percentPlayTime = static_cast<float>(GetPlayTime()) / GetTotalPlayTime() * 0.1f;
@@ -5224,8 +5224,10 @@ std::string CGUIInfoManager::GetItemLabel(const CFileItem *item, int info, std::
   case LISTITEM_USER_RATING:
     {
       std::string strUserRating;
-      if (item->GetVideoInfoTag()->m_iUserRating > 0)
+      if (item->HasVideoInfoTag() && item->GetVideoInfoTag()->m_iUserRating > 0)
         strUserRating = StringUtils::Format("%i", item->GetVideoInfoTag()->m_iUserRating);
+      else if (item->HasMusicInfoTag() && item->GetMusicInfoTag()->GetUserrating() > '0')
+        strUserRating.assign(1, item->GetMusicInfoTag()->GetUserrating());
       return strUserRating;
     }
     break;
@@ -5894,9 +5896,9 @@ bool CGUIInfoManager::GetItemBool(const CGUIListItem *item, int condition) const
       {
         CEpgInfoTagPtr epgTag = pItem->GetEPGInfoTag();
 
-        // Check if the tag has a currently active recording associated
-        if (epgTag->HasRecording() && epgTag->IsActive())
-          return true;
+        // Check if the tag has a currently recording timer associated
+        if (epgTag->HasTimer())
+          return epgTag->Timer()->IsRecording();
 
         // Search all timers for something that matches the tag
         CFileItemPtr timer = g_PVRTimers->GetTimerForEpgTag(pItem);

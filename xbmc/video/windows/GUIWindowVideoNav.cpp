@@ -473,7 +473,7 @@ bool CGUIWindowVideoNav::GetDirectory(const std::string &strDirectory, CFileItem
       std::string label;
       if (items.GetLabel().empty() && m_rootDir.IsSource(items.GetPath(), CMediaSourceSettings::GetInstance().GetSources("video"), &label)) 
         items.SetLabel(label);
-      if (!items.IsSourcesPath())
+      if (!items.IsSourcesPath() && !items.IsLibraryFolder())
         LoadVideoInfo(items);
     }
 
@@ -733,7 +733,7 @@ void CGUIWindowVideoNav::PlayItem(int iItem)
   CGUIWindowVideoBase::PlayItem(iItem);
 }
 
-void CGUIWindowVideoNav::OnInfo(CFileItem* pItem, ADDON::ScraperPtr& scraper)
+void CGUIWindowVideoNav::OnItemInfo(CFileItem* pItem, ADDON::ScraperPtr& scraper)
 {
   if (!scraper || scraper->Content() == CONTENT_NONE)
   {
@@ -748,7 +748,7 @@ void CGUIWindowVideoNav::OnInfo(CFileItem* pItem, ADDON::ScraperPtr& scraper)
     }
     m_database.Close();
   }
-  CGUIWindowVideoBase::OnInfo(pItem,scraper);
+  CGUIWindowVideoBase::OnItemInfo(pItem,scraper);
 }
 
 void CGUIWindowVideoNav::OnDeleteItem(CFileItemPtr pItem)

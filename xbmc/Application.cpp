@@ -120,9 +120,6 @@
 #ifdef HAS_VIDEO_PLAYBACK
 #include "cores/VideoRenderers/RenderManager.h"
 #endif
-#ifdef HAS_KARAOKE
-#include "music/karaoke/karaokelyricsmanager.h"
-#endif
 #include "network/ZeroconfBrowser.h"
 #ifndef TARGET_POSIX
 #include "threads/platform/win/Win32Exception.h"
@@ -262,6 +259,8 @@ using KODI::MESSAGING::HELPERS::DialogResponse;
 //extern IDirectSoundRenderer* m_pAudioDecoder;
 CApplication::CApplication(void)
   : m_pPlayer(new CApplicationPlayer)
+  , m_saveSkinOnUnloading(true)
+  , m_autoExecScriptExecuted(false)
   , m_itemCurrentFile(new CFileItem)
   , m_stackFileItemToUpdate(new CFileItem)
   , m_progressTrackingVideoResumeBookmark(*new CBookmark)
@@ -284,7 +283,6 @@ CApplication::CApplication(void)
   m_bPlaybackStarting = false;
   m_ePlayState = PLAY_STATE_NONE;
   m_skinReverting = false;
-  m_loggingIn = false;
 
 #ifdef HAS_GLX
   XInitThreads();
@@ -292,9 +290,6 @@ CApplication::CApplication(void)
 
 
   /* for now always keep this around */
-#ifdef HAS_KARAOKE
-  m_pKaraokeMgr = new CKaraokeLyricsManager();
-#endif
   m_currentStack = new CFileItemList;
 
   m_bPresentFrame = false;
@@ -328,10 +323,6 @@ CApplication::~CApplication(void)
   delete m_Autorun;
 #endif
   delete m_currentStack;
-
-#ifdef HAS_KARAOKE
-  delete m_pKaraokeMgr;
-#endif
 
   delete m_dpms;
   delete m_pInertialScrollingHandler;
@@ -453,7 +444,6 @@ bool CApplication::Create()
   CApplicationMessenger::GetInstance().RegisterReceiver(this);
   CApplicationMessenger::GetInstance().RegisterReceiver(&g_playlistPlayer);
   CApplicationMessenger::GetInstance().RegisterReceiver(&g_infoManager);
-  CApplicationMessenger::GetInstance().RegisterReceiver(&g_AEDSPManager);
 
   for (int i = RES_HDTV_1080i; i <= RES_PAL60_16x9; i++)
   {
@@ -1219,7 +1209,7 @@ bool CApplication::Initialize()
   if (!CProfilesManager::GetInstance().UsingLoginScreen())
   {
     UpdateLibraries();
-    SetLoggingIn(true);
+    SetLoggingIn(false);
   }
 
   m_slowTimer.StartZero();
@@ -1493,9 +1483,8 @@ bool CApplication::OnSettingUpdate(CSetting* &setting, const char *oldSettingId,
   if (setting == NULL)
     return false;
 
-  const std::string &settingId = setting->GetId();
 #if defined(HAS_LIBAMCODEC)
-  if (settingId == CSettings::SETTING_VIDEOPLAYER_USEAMCODEC)
+  if (setting->GetId() == CSettings::SETTING_VIDEOPLAYER_USEAMCODEC)
   {
     // Do not permit amcodec to be used on non-aml platforms.
     // The setting will be hidden but the default value is true,
@@ -1508,14 +1497,14 @@ bool CApplication::OnSettingUpdate(CSetting* &setting, const char *oldSettingId,
   }
 #endif
 #if defined(TARGET_ANDROID)
-  if (settingId == CSettings::SETTING_VIDEOPLAYER_USESTAGEFRIGHT)
+  if (setting->GetId() == CSettings::SETTING_VIDEOPLAYER_USESTAGEFRIGHT)
   {
     CSettingBool *usestagefright = (CSettingBool*)setting;
     return usestagefright->SetValue(false);
   }
 #endif
 #if defined(TARGET_DARWIN_OSX)
-  if (settingId == CSettings::SETTING_AUDIOOUTPUT_AUDIODEVICE)
+  if (setting->GetId() == CSettings::SETTING_AUDIOOUTPUT_AUDIODEVICE)
   {
     CSettingString *audioDevice = (CSettingString*)setting;
     // Gotham and older didn't enumerate audio devices per stream on osx
@@ -1591,15 +1580,9 @@ bool CApplication::Load(const TiXmlNode *settings)
   const TiXmlElement *audioElement = settings->FirstChildElement("audio");
   if (audioElement != NULL)
   {
-#ifndef TARGET_ANDROID
     XMLUtils::GetBoolean(audioElement, "mute", m_muted);
     if (!XMLUtils::GetFloat(audioElement, "fvolumelevel", m_volumeLevel, VOLUME_MINIMUM, VOLUME_MAXIMUM))
       m_volumeLevel = VOLUME_MAXIMUM;
-#else
-    // Use system volume settings
-    m_volumeLevel = CXBMCApp::GetSystemVolume();
-    m_muted = (m_volumeLevel == 0);
-#endif
   }
 
   return true;
@@ -1765,8 +1748,10 @@ void CApplication::UnloadSkin(bool forReload /* = false */)
 {
   CLog::Log(LOGINFO, "Unloading old skin %s...", forReload ? "for reload " : "");
 
-  if (g_SkinInfo != nullptr)
+  if (g_SkinInfo != nullptr && m_saveSkinOnUnloading)
     g_SkinInfo->SaveSettings();
+  else if (!m_saveSkinOnUnloading)
+    m_saveSkinOnUnloading = true;
 
   g_audioManager.Enable(false);
 
@@ -2333,9 +2318,6 @@ bool CApplication::OnAction(const CAction &action)
       if (!m_pPlayer->IsPaused() && m_pPlayer->GetPlaySpeed() != 1)
         m_pPlayer->SetPlaySpeed(1, g_application.m_muted);
 
-      #ifdef HAS_KARAOKE
-      m_pKaraokeMgr->SetPaused( m_pPlayer->IsPaused() );
-#endif
       g_audioManager.Enable(m_pPlayer->IsPaused());
       return true;
     }
@@ -2587,6 +2569,13 @@ void CApplication::OnApplicationMessage(ThreadMessage* pMsg)
       StartPVRManager();
     else
       StopPVRManager();
+    break;
+
+  case TMSG_SETAUDIODSPSTATE:
+    if(pMsg->param1 == ACTIVE_AE_DSP_STATE_ON)
+      ActiveAE::CActiveAEDSP::GetInstance().Activate(pMsg->param2 == ACTIVE_AE_DSP_ASYNC_ACTIVATE);
+    else if(pMsg->param1 == ACTIVE_AE_DSP_STATE_OFF)
+      ActiveAE::CActiveAEDSP::GetInstance().Deactivate();
     break;
 
   case TMSG_START_ANDROID_ACTIVITY:
@@ -3483,14 +3472,6 @@ PlayBackRet CApplication::PlayFile(const CFileItem& item, bool bRestart)
   // reset VideoStartWindowed as it's a temp setting
   CMediaSettings::GetInstance().SetVideoStartWindowed(false);
 
-#ifdef HAS_KARAOKE
-  //We have to stop parsing a cdg before mplayer is deallocated
-  // WHY do we have to do this????
-  if (m_pKaraokeMgr)
-    m_pKaraokeMgr->Stop();
-#endif
-
-
   {
     CSingleLock lock(m_playStateMutex);
     // tell system we are starting a file
@@ -3928,10 +3909,6 @@ void CApplication::StopPlaying()
   int iWin = g_windowManager.GetActiveWindow();
   if ( m_pPlayer->IsPlaying() )
   {
-#ifdef HAS_KARAOKE
-    if( m_pKaraokeMgr )
-      m_pKaraokeMgr->Stop();
-#endif
     m_pPlayer->CloseFile();
 
     // turn off visualisation window when stopping
@@ -4283,30 +4260,6 @@ bool CApplication::OnMessage(CGUIMessage& message)
       param["player"]["speed"] = 1;
       param["player"]["playerid"] = g_playlistPlayer.GetCurrentPlaylist();
       CAnnouncementManager::GetInstance().Announce(Player, "xbmc", "OnPlay", m_itemCurrentFile, param);
-
-      if (m_pPlayer->IsPlayingAudio())
-      {
-        // Start our cdg parser as appropriate
-#ifdef HAS_KARAOKE
-        if (m_pKaraokeMgr && CSettings::GetInstance().GetBool(CSettings::SETTING_KARAOKE_ENABLED) && !m_itemCurrentFile->IsInternetStream())
-        {
-          m_pKaraokeMgr->Stop();
-          if (m_itemCurrentFile->IsMusicDb())
-          {
-            if (!m_itemCurrentFile->HasMusicInfoTag() || !m_itemCurrentFile->GetMusicInfoTag()->Loaded())
-            {
-              IMusicInfoTagLoader* tagloader = CMusicInfoTagLoaderFactory::CreateLoader(*m_itemCurrentFile);
-              tagloader->Load(m_itemCurrentFile->GetPath(),*m_itemCurrentFile->GetMusicInfoTag());
-              delete tagloader;
-            }
-            m_pKaraokeMgr->Start(m_itemCurrentFile->GetMusicInfoTag()->GetURL());
-          }
-          else
-            m_pKaraokeMgr->Start(m_itemCurrentFile->GetPath());
-        }
-#endif
-      }
-
       return true;
     }
     break;
@@ -4367,10 +4320,6 @@ bool CApplication::OnMessage(CGUIMessage& message)
   case GUI_MSG_PLAYBACK_ENDED:
   case GUI_MSG_PLAYLISTPLAYER_STOPPED:
     {
-#ifdef HAS_KARAOKE
-      if (m_pKaraokeMgr )
-        m_pKaraokeMgr->Stop();
-#endif
 #ifdef TARGET_DARWIN_IOS
       CDarwinUtils::SetScheduling(message.GetMessage());
 #endif
@@ -4555,9 +4504,9 @@ void CApplication::Process()
   // (this can only be done after g_windowManager.Render())
   CApplicationMessenger::GetInstance().ProcessWindowMessages();
 
-  if (m_loggingIn)
+  if (m_autoExecScriptExecuted)
   {
-    m_loggingIn = false;
+    m_autoExecScriptExecuted = false;
 
     // autoexec.py - profile
     std::string strAutoExecPy = CSpecialProtocol::TranslatePath("special://profile/autoexec.py");
@@ -4643,11 +4592,6 @@ void CApplication::ProcessSlow()
 
   // check for any idle curl connections
   g_curlInterface.CheckIdle();
-
-#ifdef HAS_KARAOKE
-  if ( m_pKaraokeMgr )
-    m_pKaraokeMgr->ProcessSlow();
-#endif
 
   if (!m_pPlayer->IsPlayingVideo())
     g_largeTextureManager.CleanupUnusedImages();
@@ -5292,6 +5236,18 @@ bool CApplication::LoadLanguage(bool reload)
   g_langInfo.SetSubtitleLanguage(CSettings::GetInstance().GetString(CSettings::SETTING_LOCALE_SUBTITLELANGUAGE));
 
   return true;
+}
+
+void CApplication::SetLoggingIn(bool switchingProfiles)
+{
+  // don't save skin settings on unloading when logging into another profile
+  // because in that case we have already loaded the new profile and
+  // would therefore write the previous skin's settings into the new profile
+  // instead of into the previous one
+  m_saveSkinOnUnloading = !switchingProfiles;
+
+  // make sure that the autoexec.py script is executed after logging in
+  m_autoExecScriptExecuted = true;
 }
 
 void CApplication::CloseNetworkShares()

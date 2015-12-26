@@ -17,30 +17,5 @@ msgstr ""
 "Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
 
 msgctxt "#30000"
-<<<<<<< c4be0a8b2712de9d38f77a8d9e14c6b20623ead5:addons/screensaver.xbmc.builtin.dim/resources/language/resource.language.sr_rs/strings.po
 msgid "Dim level"
-msgstr "Ниво затамљења"
-=======
-msgid "Mode"
-msgstr "Režim"
-
-msgctxt "#30005"
-msgid "Small"
-msgstr "Malo"
-
-msgctxt "#30006"
-msgid "Default"
-msgstr "Podrazumevano"
-
-msgctxt "#30009"
-msgid "Speed"
-msgstr "Brzina"
-
-msgctxt "#30012"
-msgid "Default"
-msgstr "Podrazumevano"
-
-msgctxt "#30013"
-msgid "Fast"
-msgstr "Brzo"
->>>>>>> [lang] update of internal addon language files:addons/visualization.dxspectrum/resources/language/resource.language.sr_rs@latin/strings.po
+msgstr "Ниво пригушења"
